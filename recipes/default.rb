@@ -60,26 +60,30 @@ ruby_block "load tests" do
       dir.recursive(true)
       dir.run_action :create
 
-      tests = ::Dir["#{Chef::Config[:cookbook_path]}/#{cookbook_name}/files/default/**/#{recipe_name}_test.rb"]
-      unless tests.empty?
-        FileUtils.cp tests, "#{node[:minitest][:path]}/#{cookbook_name}/"
+      Chef::Config[:cookbook_path].each do |cookbook_path|
+        tests = ::Dir["#{cookbook_path}/#{cookbook_name}/files/default/**/#{recipe_name}_test.rb"]
+        unless tests.empty?
+          FileUtils.cp tests, "#{node[:minitest][:path]}/#{cookbook_name}/"
+        end
       end
       
-      support_files = ::Dir["#{Chef::Config[:cookbook_path]}/#{cookbook_name}/files/default/**/*helper*.rb"]
-      unless support_files.empty?
-        # do this in a loop to preserve directory structure
-        # for backwards compatibility for dumb idea of putting support files in support/
-        support_files.each do |f|
-          if f =~ /tests\/minitest\/support/
-            dest_dir = "#{node[:minitest][:path]}/#{cookbook_name}/support/"
-            begin
-              FileUtils.mkdir dest_dir
-            rescue Errno::EEXIST
+      Chef::Config[:cookbook_path].each do |cookbook_path|
+        support_files = ::Dir["#{cookbook_path}/#{cookbook_name}/files/default/**/*helper*.rb"]
+        unless support_files.empty?
+          # do this in a loop to preserve directory structure
+          # for backwards compatibility for dumb idea of putting support files in support/
+          support_files.each do |f|
+            if f =~ /tests\/minitest\/support/
+              dest_dir = "#{node[:minitest][:path]}/#{cookbook_name}/support/"
+              begin
+                FileUtils.mkdir dest_dir
+              rescue Errno::EEXIST
+              end
+            else
+              dest_dir = "#{node[:minitest][:path]}/#{cookbook_name}/"
             end
-          else
-            dest_dir = "#{node[:minitest][:path]}/#{cookbook_name}/"
+            FileUtils.cp support_files, dest_dir
           end
-          FileUtils.cp support_files, dest_dir
         end
       end
     end
